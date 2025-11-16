@@ -1,24 +1,33 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { isEmptyValue } from "../utils";
-import { VNode } from "./types";
 import { Fragment, TEXT_ELEMENT } from "./constants";
+import { VNode } from "./types";
 
 /**
  * 주어진 노드를 VNode 형식으로 정규화합니다.
  * null, undefined, boolean, 배열, 원시 타입 등을 처리하여 일관된 VNode 구조를 보장합니다.
  */
-export const normalizeNode = (node: VNode): VNode | null => {
-  // 여기를 구현하세요.
-  return null;
+export const normalizeNode = (node: any): VNode | null => {
+  if (isEmptyValue(node)) return null;
+
+  if (node && typeof node === "object" && "type" in node && "props" in node) {
+    return node as VNode;
+  }
+
+  return createTextElement(node);
 };
 
 /**
  * 텍스트 노드를 위한 VNode를 생성합니다.
  */
-const createTextElement = (node: VNode): VNode => {
-  // 여기를 구현하세요.
-  return {} as VNode;
-};
+const createTextElement = (node: unknown): VNode => ({
+  type: TEXT_ELEMENT,
+  key: null,
+  props: {
+    children: [],
+    nodeValue: String(node),
+  },
+});
 
 /**
  * JSX로부터 전달된 인자를 VNode 객체로 변환합니다.
@@ -29,7 +38,20 @@ export const createElement = (
   originProps?: Record<string, any> | null,
   ...rawChildren: any[]
 ) => {
-  // 여기를 구현하세요.
+  const { key = null, ...restProps } = originProps || {};
+  const props: Record<string, any> = { ...restProps };
+
+  const flatChildren = rawChildren.flat(Infinity);
+  const children: VNode[] = [];
+
+  for (const child of flatChildren) {
+    const normalized = normalizeNode(child);
+    if (normalized) children.push(normalized);
+  }
+
+  if (children.length) props.children = children;
+
+  return { type, key, props } as VNode;
 };
 
 /**
@@ -43,6 +65,13 @@ export const createChildPath = (
   nodeType?: string | symbol | React.ComponentType,
   siblings?: VNode[],
 ): string => {
-  // 여기를 구현하세요.
-  return "";
+  if (key != null) return parentPath ? `${parentPath}.k${key}` : `k${key}`;
+
+  const prevSiblings = siblings?.slice(0, index) ?? [];
+  const count = prevSiblings.filter(
+    (sibling) => sibling && sibling.type === (nodeType === Fragment ? Fragment : nodeType) && sibling.key == null,
+  ).length;
+
+  const token = nodeType === Fragment ? `f${count}` : String(count);
+  return parentPath ? `${parentPath}.${token}` : token;
 };

@@ -9,12 +9,10 @@ import { VNode } from "./types";
  */
 export const normalizeNode = (node: any): VNode | null => {
   if (isEmptyValue(node)) return null;
+  if (Array.isArray(node)) return createElement(Fragment, null, ...node);
+  if (typeof node !== "object") return createTextElement(node);
 
-  if (node && typeof node === "object" && "type" in node && "props" in node) {
-    return node as VNode;
-  }
-
-  return createTextElement(node);
+  return { ...node, props: node.props ?? null, key: node.key ?? null } as VNode;
 };
 
 /**
@@ -45,8 +43,8 @@ export const createElement = (
   const children: VNode[] = [];
 
   for (const child of flatChildren) {
-    const normalized = normalizeNode(child);
-    if (normalized) children.push(normalized);
+    const node = normalizeNode(child);
+    if (node) children.push(node);
   }
 
   if (children.length) props.children = children;

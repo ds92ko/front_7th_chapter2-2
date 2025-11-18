@@ -7,6 +7,7 @@ import { Instance } from "./types";
  * 이벤트 핸들러, 스타일, className 등 다양한 속성을 처리해야 합니다.
  */
 export const setDomProps = (dom: HTMLElement, props: Record<string, any>): void => {
+  if (!props) return;
   Object.entries(props).forEach(([key, value]) => {
     if (key === "children") return;
 

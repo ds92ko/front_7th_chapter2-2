@@ -54,7 +54,7 @@ const mountNode = (parentDom: HTMLElement, node: VNode, path: string): Instance 
 
   // TEXT 노드
   if (type === TEXT_ELEMENT) {
-    const dom = document.createTextNode(node.props.nodeValue ?? "");
+    const dom = document.createTextNode(node.props?.nodeValue ?? "");
     const instance: Instance = {
       kind: NodeTypes.TEXT,
       dom,
@@ -69,7 +69,7 @@ const mountNode = (parentDom: HTMLElement, node: VNode, path: string): Instance 
 
   // Fragment
   if (type === Fragment) {
-    const children = (node.props.children ?? []).filter((child) => !isEmptyValue(child));
+    const children = (node.props?.children ?? []).filter((child) => !isEmptyValue(child));
     const childInstances: (Instance | null)[] = [];
 
     for (let i = 0; i < children.length; i++) {
@@ -98,7 +98,7 @@ const mountNode = (parentDom: HTMLElement, node: VNode, path: string): Instance 
   const dom = document.createElement(type as string);
   setDomProps(dom, node.props);
 
-  const children = (node.props.children ?? []).filter((child) => !isEmptyValue(child));
+  const children = (node.props?.children ?? []).filter((child) => !isEmptyValue(child));
   const childInstances: (Instance | null)[] = [];
 
   for (let i = 0; i < children.length; i++) {
@@ -138,7 +138,7 @@ const mountComponent = (parentDom: HTMLElement, node: VNode, path: string): Inst
 
   try {
     // 컴포넌트 함수 실행
-    const childNode = component(props);
+    const childNode = component(props ?? {});
 
     // 자식 노드 마운트
     const childPath = createChildPath(path, childNode?.key ?? null, 0, childNode?.type, childNode ? [childNode] : []);
@@ -168,7 +168,7 @@ const updateInstance = (parentDom: HTMLElement, instance: Instance, node: VNode,
 
   // TEXT 노드 업데이트
   if (kind === NodeTypes.TEXT) {
-    const newValue = node.props.nodeValue ?? "";
+    const newValue = node.props?.nodeValue ?? "";
     if (instance.dom && instance.dom.nodeValue !== newValue) instance.dom.nodeValue = newValue;
     instance.node = node;
     return instance;
@@ -186,7 +186,7 @@ const updateInstance = (parentDom: HTMLElement, instance: Instance, node: VNode,
   if (kind === NodeTypes.COMPONENT) return updateComponent(parentDom, instance, node, path);
 
   // HOST (DOM 요소) 업데이트
-  updateDomProps(instance.dom as HTMLElement, instance.node.props, node.props);
+  updateDomProps(instance.dom as HTMLElement, instance.node.props ?? {}, node.props ?? {});
   reconcileChildren(instance.dom as HTMLElement, instance, node, path);
   instance.node = node;
 
@@ -207,7 +207,7 @@ const updateComponent = (parentDom: HTMLElement, instance: Instance, node: VNode
 
   try {
     // 컴포넌트 함수 재실행
-    const childNode = component(props);
+    const childNode = component(props ?? {});
 
     // 자식 노드 재조정
     const oldChildInstance = instance.children[0] ?? null;
@@ -230,7 +230,7 @@ const updateComponent = (parentDom: HTMLElement, instance: Instance, node: VNode
  */
 const reconcileChildren = (parentDom: HTMLElement, instance: Instance, node: VNode, path: string): void => {
   const oldChildren = instance.children;
-  const newChildren = node.props.children ?? [];
+  const newChildren = node.props?.children ?? [];
 
   // key 기반 맵 생성
   const keyMap = new Map<string | null, Instance>();

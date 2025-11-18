@@ -17,8 +17,12 @@ const flushEffects = withEnqueue(() => {
     if (!hooksForPath) continue;
 
     const hook = hooksForPath[cursor] as EffectHook | undefined;
-    if (!hook) continue;
+    if (!hook || hook.kind !== HookTypes.EFFECT) continue;
 
+    // 이전 cleanup 함수가 있으면 먼저 실행
+    hook.cleanup?.();
+
+    // 새로운 effect 실행하고 cleanup 저장
     const result = hook.effect();
     hook.cleanup = typeof result === "function" ? result : null;
   }
@@ -112,22 +116,20 @@ export const useEffect = (effect: () => (() => void) | void, deps?: unknown[]): 
 
   // 1. 이전 훅의 의존성 배열과 현재 의존성 배열을 비교(shallowEquals)합니다.
   const shouldRun = !deps || !prevHook || !prevDeps || !shallowEquals(prevDeps, deps);
-  const cleanup: (() => void) | null = prevHook?.cleanup ?? null;
 
   // 2. 의존성이 변경되었거나 첫 렌더링일 경우, 이펙트 실행을 예약합니다.
   if (shouldRun) {
-    // 3. 이펙트 실행 전, 이전 클린업 함수가 있다면 먼저 실행합니다.
-    cleanup?.();
-
-    // 4. 예약된 이펙트는 렌더링이 끝난 후 비동기로 실행됩니다.
     effects.queue.push({ path, cursor: hookIndex });
+
+    // 3. 이펙트 실행 전, 이전 클린업 함수가 있다면 먼저 실행합니다.
+    // 4. 예약된 이펙트는 렌더링이 끝난 후 비동기로 실행됩니다.
     flushEffects();
   }
 
   hooksForPath[hookIndex] = {
     kind: HookTypes.EFFECT,
     deps: deps ?? null,
-    cleanup,
+    cleanup: prevHook?.cleanup ?? null,
     effect,
   };
 

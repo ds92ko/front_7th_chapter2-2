@@ -141,6 +141,12 @@ export const updateDomProps = (
       return;
     }
 
+    // 이벤트 핸들러가 null/undefined로 변경된 경우 제거
+    if (key.startsWith("on") && typeof prevValue === "function" && (value == null || typeof value !== "function")) {
+      dom.removeEventListener(key.slice(2).toLowerCase(), prevValue);
+      return;
+    }
+
     // className 설정
     if (key === "className") {
       if (!isUnchanged) dom.className = value ?? "";
@@ -232,7 +238,12 @@ export const insertInstance = (
   if (!instance) return;
 
   const nodes = getDomNodes(instance);
-  for (const node of nodes) parentDom.insertBefore(node, anchor);
+  for (const node of nodes) {
+    if (node.parentNode === parentDom && (anchor ? node.nextSibling === anchor : node.nextSibling === null)) continue;
+
+    if (anchor) parentDom.insertBefore(node, anchor);
+    else parentDom.appendChild(node);
+  }
 };
 
 /**
